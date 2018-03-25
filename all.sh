@@ -8,25 +8,35 @@ import history
 import files
 import programs
 
-OS <= uname -s
-
-sedArgs = "-r"
-
-if $OS == "Darwin" {
-	sedArgs = "-E"
-}
-
-NASHCOMPLETE_CMD = (
+var UNIXTOOLS = ("ls" "echo" "cat" "sed" "grep")
+var NASHCOMPLETE_CMD = (
 	("kill" $nash_complete_kill)
 	("systemctl" $nash_complete_systemctl)
 )
+
+fn abort(msg) {
+	print("[nashcomplete] error: %s\n", $msg)
+}
+
+fn init() {
+	for tool in $UNIXTOOLS {
+		var _, status <= which $tool >[2=]
+
+		if $status != "0" {
+			abort("Unix tool not installed: "+$tool+" not found")
+		}
+	}
+}
 
 fn nash_complete_args(parts, line, pos) {
 	if len($parts) == "0" {
 		return ()
 	}
 
-	cmd = $parts[0]
+	var cmd = $parts[0]
+	var name = ""
+	var callback = ""
+	var ret = ""
 
 	for completecmd in $NASHCOMPLETE_CMD {
 		name     = $completecmd[0]
@@ -34,7 +44,7 @@ fn nash_complete_args(parts, line, pos) {
 
 		if $cmd == $name {
 			ret <= $callback($parts, $line, $pos)
-
+			
 			return $ret
 		}
 	}
@@ -45,32 +55,37 @@ fn nash_complete_args(parts, line, pos) {
 }
 
 fn nash_complete(line, pos) {
+	var ret = ""
+	var parts = ""
+
 	if $line == "" {
 		# search in the history
 		ret <= nash_complete_history()
-
+		
 		return $ret
 	}
 
 	parts <= split($line, " ")
 
+	ret = ()
+
 	if len($parts) == "0" {
 		# not sure when happens
 		return ()
 	} else if len($parts) == "1" {
-		echo $line | -grep "^\\." >[1=]
-
+		var _, status <= echo $line | grep "^\\."
+		
 		if $status == "0" {
 			ret <= nash_complete_paths($parts, $line, $pos)
-
+			
 			return $ret
 		}
-
-		echo $line | -grep " $" >[1=]
-
+		
+		_, status <= echo $line | -grep " $"
+		
 		if $status != "0" {
 			ret <= nash_complete_program($line, $pos)
-
+			
 			return $ret
 		}
 	}
@@ -79,3 +94,5 @@ fn nash_complete(line, pos) {
 
 	return $ret
 }
+
+init()

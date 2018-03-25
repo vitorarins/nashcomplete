@@ -1,45 +1,47 @@
 # Autocomplete of files
 
 fn nash_complete_paths(parts, line, pos) {
-	partsz   <= len($parts)
-	last     <= -expr $partsz - 1
-	last     <= trim($last)
-	lastpart <= echo -n $parts[$last] | sed $sedArgs "s#^~#"+$HOME+"#g"
+	var partsz <= len($parts)
+	var last <= -expr $partsz - 1
 
-	-test -d $lastpart
+	last <= trim($last)
+
+	var lastpart <= echo -n $parts[$last] | sed -r "s#^~#"+$HOME+"#g"
+	var _, status <= test -d $lastpart
 
 	if $status == "0" {
 		# already a directory
-		echo -n $lastpart | -grep "/$" >[1=]
-
+		var _, status <= echo -n $lastpart | -grep "/$" >[1=]
+		
 		# complete with '/' if it wasnt given
 		if $status != "0" {
 			return ("/" "0")
 		}
-
-		dir   = $lastpart
-		fname = ""
+		
+		var dir = $lastpart
+		var fname = ""
 	} else {
-		dir   <= dirname $lastpart | tr -d "\n"
-		dir   = $dir+"/"
-		fname <= basename $lastpart | tr -d "\n"
+		var dir <= dirname $lastpart | tr -d "\n"
+		
+		dir = $dir+"/"
+		
+		var fname <= basename $lastpart | tr -d "\n"
 	}
-
 	if $fname == "/" {
 		fname = ""
 	}
 
-	-test -d $dir
+	_, status <= test -d $dir
 
 	if $status != "0" {
 		# autocompleting non-existent directory
 		return ()
 	}
 
-	choice <= (
+	var choice, status <= (
 		find $dir -maxdepth 1 |
 		sed "s#"+$dir+"##g" |
-		-fzf -q "^"+$fname
+		fzf -q "^"+$fname
 				-1
 				-0
 				--header "Looking for path"
@@ -53,11 +55,11 @@ fn nash_complete_paths(parts, line, pos) {
 		return ()
 	}
 
-	-test -d $dir+$choice
+	_, status <= test -d $dir+$choice
 
 	if $status == "0" {
-		echo $choice | -grep "/$" >[1=]
-
+		_, status <= echo $choice | -grep "/$"
+		
 		if $status != "0" {
 			choice = $choice+"/"
 		}
