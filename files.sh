@@ -41,13 +41,10 @@ fn nash_complete_paths(parts, line, pos) {
 	var choice, status <= (
 		find $dir -maxdepth 1 |
 		sed "s#"+$dir+"##g" |
-		fzf -q "^"+$fname
-				-1
-				-0
-				--header "Looking for path"
-				--prompt "(λ path)>"
-				--reverse
-				 |
+		fzf -q "^"+$fname "+i" -1
+					-0
+					--header
+					"Looking for path" --prompt "(λ path)>" --reverse |
 		tr -d "\n"
 	)
 
