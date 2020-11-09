@@ -2,10 +2,8 @@
 
 fn nash_complete_paths(parts, line, pos) {
 	var partsz <= len($parts)
-	var last <= -expr $partsz - 1
-
-	last <= trim($last)
-
+	var last, _ <= expr $partsz - 1
+	var last <= trim($last)
 	var lastpart <= echo -n $parts[$last] | sed -r "s#^~#"+$HOME+"#g"
 	var _, status <= test -d $lastpart
 
